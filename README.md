@@ -12,66 +12,70 @@ A Claude Code plugin for managing Braintrust prompts via CLI.
 
 ## Installation
 
-Add to your Claude Code settings (`~/.claude/settings.json`):
+```bash
+/plugin install github:benigeri/braintrust-claude-plugin
+```
+
+Or add to `~/.claude/settings.json`:
 
 ```json
 {
-  "plugins": ["github:YOUR_USERNAME/braintrust-claude-plugin"]
+  "plugins": ["github:benigeri/braintrust-claude-plugin"]
 }
-```
-
-Or install via CLI:
-
-```bash
-/plugin install github:YOUR_USERNAME/braintrust-claude-plugin
 ```
 
 ## Setup
 
-Set your Braintrust API key:
+Set your Braintrust API key in your project's `.env`:
 
 ```bash
-# Add to your .env file
 BRAINTRUST_API_KEY=sk-your-api-key
-
-# Optional: Set default project
-BRAINTRUST_PROJECT_NAME=Your_Project_Name
+BRAINTRUST_PROJECT_NAME=Your_Project_Name  # optional default
 ```
 
-Get your API key from: https://www.braintrust.dev/app/settings/api-keys
+Get your API key: https://www.braintrust.dev/app/settings/api-keys
 
 ## Usage
 
-Use the `/braintrust` command in Claude Code, or run the CLI directly:
+Run `/braintrust` in Claude Code to load the skill, then use commands like:
 
 ```bash
 # List all prompts
-python3 braintrust.py list
+/braintrust list
 
 # View prompt details
-python3 braintrust.py get --slug "email-draft"
-
-# Create a prompt
-python3 braintrust.py create \
-  --slug "email-draft" \
-  --name "Email Draft Generator" \
-  --system "You are an email assistant..." \
-  --user "Write an email about: {{topic}}"
+/braintrust get --slug "email-draft"
 
 # Always diff before updating!
-python3 braintrust.py diff --slug "email-draft" --system "Updated prompt..."
-python3 braintrust.py update --slug "email-draft" --system "Updated prompt..."
+/braintrust diff --slug "email-draft" --system "Updated prompt..."
+/braintrust update --slug "email-draft" --system "Updated prompt..."
 
 # Generate TypeScript code
-python3 braintrust.py generate --slug "email-draft"
+/braintrust generate --slug "email-draft"
 ```
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `list` | List all prompts in project |
+| `get --slug X` | View prompt details |
+| `create --slug X --system "..." --user "..."` | Create new prompt |
+| `diff --slug X --system "..."` | Preview changes |
+| `update --slug X --system "..."` | Apply changes |
+| `generate --slug X` | Generate TypeScript code |
+| `delete --slug X` | Delete prompt |
 
 ## Best Practices
 
 1. **Always diff before updating** - Review changes before applying
 2. **Use descriptive slugs** - `email-draft-v2` not `prompt-1`
 3. **Test after updates** - Verify prompts work as expected
-4. **Check Braintrust dashboard** - Verify traces appear
+
+## Links
+
+- [Braintrust Docs](https://www.braintrust.dev/docs)
+- [Braintrust Dashboard](https://www.braintrust.dev)
 
 ## License
 

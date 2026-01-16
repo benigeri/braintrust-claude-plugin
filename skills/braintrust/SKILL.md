@@ -351,6 +351,6 @@ Always verify:
 </anti_patterns>
 
 <reference_guides>
-- [Braintrust Best Practices](../../../docs/braintrust-best-practices.md) - Comprehensive patterns guide
 - [Braintrust Docs](https://www.braintrust.dev/docs) - Official documentation
+- [Braintrust API Reference](https://www.braintrust.dev/docs/reference/api) - API documentation
 </reference_guides>

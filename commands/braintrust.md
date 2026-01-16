@@ -6,29 +6,31 @@ skill: braintrust
 
 # /braintrust
 
-Load the Braintrust skill for prompt management.
+Manage Braintrust prompts: list, create, update, diff, and generate TypeScript code.
 
-This skill provides a CLI for managing Braintrust prompts:
-- **list** - List all prompts in a project
-- **get** - View prompt details
-- **create** - Create a new prompt
-- **update** - Update an existing prompt
-- **diff** - Preview changes before updating
-- **generate** - Generate TypeScript invocation code
-- **delete** - Delete a prompt
+## Quick Reference
 
-## Quick Start
+| Command | Description |
+|---------|-------------|
+| `list` | List all prompts |
+| `get --slug X` | View prompt details |
+| `create --slug X --system "..." --user "..."` | Create prompt |
+| `diff --slug X --system "..."` | Preview changes |
+| `update --slug X --system "..."` | Apply changes |
+| `generate --slug X` | Generate TypeScript |
+| `delete --slug X` | Delete prompt |
+
+## Setup
+
+Requires `BRAINTRUST_API_KEY` in your `.env` file.
+
+## Examples
 
 ```bash
 # List prompts
-python3 ~/.claude/plugins/*/braintrust-*/skills/braintrust/braintrust.py list
-
-# Get prompt details
-python3 ~/.claude/plugins/*/braintrust-*/skills/braintrust/braintrust.py get --slug "my-prompt"
+python3 braintrust.py list
 
 # Always diff before updating
-python3 ~/.claude/plugins/*/braintrust-*/skills/braintrust/braintrust.py diff --slug "my-prompt" --system "New content"
-python3 ~/.claude/plugins/*/braintrust-*/skills/braintrust/braintrust.py update --slug "my-prompt" --system "New content"
+python3 braintrust.py diff --slug "my-prompt" --system "New content"
+python3 braintrust.py update --slug "my-prompt" --system "New content"
 ```
-
-See SKILL.md for full documentation.
