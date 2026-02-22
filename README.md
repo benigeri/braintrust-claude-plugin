@@ -74,12 +74,12 @@ You have an email drafting prompt that's too formal. Here's the proper workflow 
 
 **Step 1: Review the current prompt**
 ```bash
-python3 ./braintrust.py get --slug "email-draft"
+python3 ./bt_cli.py get --slug "email-draft"
 ```
 
 **Step 2: Create a test version with your changes**
 ```bash
-python3 ./braintrust.py create \
+python3 ./bt_cli.py create \
   --slug "email-draft-v2-test" \
   --name "Email Draft (Test)" \
   --system "You are a friendly email assistant. Write concise, warm emails. Avoid corporate jargon." \
@@ -91,8 +91,8 @@ python3 ./braintrust.py create \
 Generate test code and run both prompts with the same input:
 
 ```bash
-python3 ./braintrust.py generate --slug "email-draft"
-python3 ./braintrust.py generate --slug "email-draft-v2-test"
+python3 ./bt_cli.py generate --slug "email-draft"
+python3 ./bt_cli.py generate --slug "email-draft-v2-test"
 ```
 
 Run the generated code to invoke both prompts. The `wrapTraced` pattern ensures all calls are logged.
@@ -108,13 +108,13 @@ Compare:
 
 **Step 5: Update the original once confirmed**
 ```bash
-python3 ./braintrust.py diff --slug "email-draft" --system "You are a friendly email assistant..."
-python3 ./braintrust.py update --slug "email-draft" --system "You are a friendly email assistant..."
+python3 ./bt_cli.py diff --slug "email-draft" --system "You are a friendly email assistant..."
+python3 ./bt_cli.py update --slug "email-draft" --system "You are a friendly email assistant..."
 ```
 
 **Step 6: Delete the test version**
 ```bash
-python3 ./braintrust.py delete --slug "email-draft-v2-test" --force
+python3 ./bt_cli.py delete --slug "email-draft-v2-test" --force
 ```
 
 ### 2. Create a New Summarization Prompt
@@ -123,7 +123,7 @@ Build a prompt from scratch for summarizing meeting notes:
 
 ```bash
 # Create the prompt
-python3 ./braintrust.py create \
+python3 ./bt_cli.py create \
   --slug "meeting-summary" \
   --name "Meeting Summary Generator" \
   --description "Summarizes meeting notes into action items" \
@@ -131,7 +131,7 @@ python3 ./braintrust.py create \
   --user "Summarize this meeting:\n\n{{notes}}"
 
 # Generate TypeScript code for your app
-python3 ./braintrust.py generate --slug "meeting-summary"
+python3 ./bt_cli.py generate --slug "meeting-summary"
 
 # Test it, check logs, iterate as needed
 ```
@@ -142,23 +142,23 @@ Your prompt returns malformed JSON. Debug it using the test version workflow:
 
 ```bash
 # 1. Check the current prompt
-python3 ./braintrust.py get --slug "data-extractor"
+python3 ./bt_cli.py get --slug "data-extractor"
 
 # 2. Create a test version with the fix
-python3 ./braintrust.py create \
+python3 ./bt_cli.py create \
   --slug "data-extractor-debug" \
   --system "Extract data and return valid JSON. Always wrap response in ```json``` code blocks."
 
 # 3. Test both versions, compare logs
-python3 ./braintrust.py generate --slug "data-extractor"
-python3 ./braintrust.py generate --slug "data-extractor-debug"
+python3 ./bt_cli.py generate --slug "data-extractor"
+python3 ./bt_cli.py generate --slug "data-extractor-debug"
 
 # 4. Check Braintrust logs to verify the fix works
 # 5. Update original once confirmed
-python3 ./braintrust.py update --slug "data-extractor" --system "..."
+python3 ./bt_cli.py update --slug "data-extractor" --system "..."
 
 # 6. Delete debug version
-python3 ./braintrust.py delete --slug "data-extractor-debug" --force
+python3 ./bt_cli.py delete --slug "data-extractor-debug" --force
 ```
 
 ## Template Variables

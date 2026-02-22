@@ -35,7 +35,7 @@ Run a prompt with given input and see the result with full tracing.
 ### Syntax
 
 ```bash
-python3 ./braintrust.py invoke \
+python3 ./bt_cli.py invoke \
   --slug "prompt-slug" \
   --input '{"variable": "value"}' \
   [--project "Project Name"] \
@@ -56,13 +56,13 @@ python3 ./braintrust.py invoke \
 
 ```bash
 # Basic invocation
-python3 ./braintrust.py invoke --slug "summarizer" --input '{"text": "Hello world"}'
+python3 ./bt_cli.py invoke --slug "summarizer" --input '{"text": "Hello world"}'
 
 # With input file
-python3 ./braintrust.py invoke --slug "summarizer" --input-file test-input.json
+python3 ./bt_cli.py invoke --slug "summarizer" --input-file test-input.json
 
 # Verbose mode
-python3 ./braintrust.py invoke --slug "summarizer" -i '{"text": "test"}' -v
+python3 ./bt_cli.py invoke --slug "summarizer" -i '{"text": "test"}' -v
 ```
 
 ### Output
@@ -93,7 +93,7 @@ Test a prompt with two modes:
 ### Simple Test
 
 ```bash
-python3 ./braintrust.py test --slug "my-prompt" --input '{"question": "test"}'
+python3 ./bt_cli.py test --slug "my-prompt" --input '{"question": "test"}'
 ```
 
 Same as invoke, but named `test` for clarity in workflows.
@@ -107,7 +107,7 @@ When you provide `--system` or `--user`, the test command automatically:
 4. Asks if you want to promote v2 to the original
 
 ```bash
-python3 ./braintrust.py test \
+python3 ./bt_cli.py test \
   --slug "email-draft" \
   --input '{"topic": "meeting follow-up"}' \
   --system "You are an expert email writer. Be concise and professional."
@@ -167,10 +167,10 @@ Delete email-draft-v2? [Y/n]: y
 
 ```bash
 # 1. Check current prompt
-python3 ./braintrust.py get --slug "my-prompt"
+python3 ./bt_cli.py get --slug "my-prompt"
 
 # 2. Run A/B test with changes
-python3 ./braintrust.py test \
+python3 ./bt_cli.py test \
   --slug "my-prompt" \
   --input '{"question": "What is machine learning?"}' \
   --system "You are an expert teacher. Use analogies and examples."
@@ -179,7 +179,7 @@ python3 ./braintrust.py test \
 
 # 4. If promoted, you're done!
 # If not promoted, v2 remains for further iteration:
-python3 ./braintrust.py test \
+python3 ./bt_cli.py test \
   --slug "my-prompt-v2" \
   --input '{"question": "different test"}'
 ```
@@ -191,7 +191,7 @@ Manually promote changes from one prompt to another.
 ### Syntax
 
 ```bash
-python3 ./braintrust.py promote \
+python3 ./bt_cli.py promote \
   --from "source-slug" \
   --to "target-slug" \
   [--force] \
@@ -211,10 +211,10 @@ python3 ./braintrust.py promote \
 
 ```bash
 # Promote after manual testing
-python3 ./braintrust.py promote --from "email-draft-v2" --to "email-draft"
+python3 ./bt_cli.py promote --from "email-draft-v2" --to "email-draft"
 
 # Keep the v2 for reference
-python3 ./braintrust.py promote --from "email-draft-v2" --to "email-draft" --keep
+python3 ./bt_cli.py promote --from "email-draft-v2" --to "email-draft" --keep
 ```
 
 ### Output
@@ -244,7 +244,7 @@ Delete email-draft-v2? [Y/n]: y
 ### Generated Code Pattern
 
 ```bash
-python3 ./braintrust.py generate --slug "my-prompt"
+python3 ./bt_cli.py generate --slug "my-prompt"
 ```
 
 Generates:
@@ -323,10 +323,10 @@ curl -H "Authorization: Bearer $BRAINTRUST_API_KEY" \
 
 ```bash
 # BAD
-python3 ./braintrust.py update --slug "my-prompt" --system "New content"
+python3 ./bt_cli.py update --slug "my-prompt" --system "New content"
 
 # GOOD - A/B test first
-python3 ./braintrust.py test \
+python3 ./bt_cli.py test \
   --slug "my-prompt" \
   --input '{"test": "input"}' \
   --system "New content"
@@ -336,10 +336,10 @@ python3 ./braintrust.py test \
 
 ```bash
 # BAD - blind update based on intuition
-python3 ./braintrust.py update --slug "my-prompt" --system "I think this is better"
+python3 ./bt_cli.py update --slug "my-prompt" --system "I think this is better"
 
 # GOOD - actually compare outputs
-python3 ./braintrust.py test --slug "my-prompt" --input '{"q": "test"}' --system "New version"
+python3 ./bt_cli.py test --slug "my-prompt" --input '{"q": "test"}' --system "New version"
 # Review both outputs, THEN decide
 ```
 
