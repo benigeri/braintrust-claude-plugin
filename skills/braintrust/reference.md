@@ -49,7 +49,7 @@ A/B mode automatically:
 | `--input` / `-i` | Test input (JSON) |
 | `--system` | Proposed system message (triggers A/B) |
 | `--user` | Proposed user message (triggers A/B) |
-| `--force` / `-f` | Skip interactive prompts |
+| `--force` / `-y` | Skip interactive prompts (auto-promotes in A/B mode) |
 
 ## promote
 
@@ -59,36 +59,12 @@ Copies content from one prompt to another.
 python3 ./bt_cli.py promote --from "slug-v2" --to "slug" [--force] [--keep]
 ```
 
-| Parameter | Description |
-|-----------|-------------|
-| `--from` | Source prompt slug |
-| `--to` | Target prompt slug |
-| `--force` / `-f` | Skip all confirmations |
-| `--keep` | Keep source prompt after promotion |
-
-## create
-
-```bash
-python3 ./bt_cli.py create --slug "my-prompt" --system "..." [--user "..."] [--name "..."] [--model "..."]
-```
-
-## update
-
-```bash
-python3 ./bt_cli.py update --slug "my-prompt" [--system "..."] [--user "..."] [--name "..."] [--model "..."]
-```
-
-## diff
-
-```bash
-python3 ./bt_cli.py diff --slug "my-prompt" --system "Proposed content"
-```
-
-## delete
-
-```bash
-python3 ./bt_cli.py delete --slug "my-prompt" [--force]
-```
+| Parameter | Short | Description |
+|-----------|-------|-------------|
+| `--from` | | Source prompt slug |
+| `--to` | | Target prompt slug |
+| `--force` | `-y` | Skip all confirmations |
+| `--keep` | | Keep source prompt after promotion |
 
 ## generate
 

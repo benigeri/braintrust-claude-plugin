@@ -52,7 +52,9 @@ python3 SKILL_DIR/bt_cli.py promote --from "slug-v2" --to "slug" --force
 
 ## Non-Interactive Mode
 
-Commands that normally prompt for confirmation (`test` with A/B, `promote`, `delete`) accept `--force` / `-f` to skip all interactive prompts. Always use `--force` when running from Claude Code.
+Commands that normally prompt for confirmation (`test` with A/B, `promote`, `delete`) accept `--force` (short: `-y`) to skip all interactive prompts. Always use the long form `--force` when running from Claude Code.
+
+**Warning:** `test --force` with A/B mode (when `--system` or `--user` is provided) will automatically promote the v2 version and delete it. For safe preview without side effects, use `invoke` first, then `update` separately.
 
 ## Environment
 

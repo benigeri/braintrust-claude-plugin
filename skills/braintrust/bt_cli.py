@@ -1,26 +1,5 @@
 #!/usr/bin/env python3
-"""
-Braintrust Prompt Management CLI
-
-A CLI for managing Braintrust prompts via REST API and SDK.
-Supports create, update, list, diff, invoke, test (A/B), and code generation.
-
-Usage:
-    python3 bt_cli.py list [--project "Project Name"]
-    python3 bt_cli.py get --slug "my-prompt"
-    python3 bt_cli.py invoke --slug "my-prompt" --input '{"key": "value"}'
-    python3 bt_cli.py test --slug "my-prompt" --input '{"key": "value"}' [--system "new prompt"]
-    python3 bt_cli.py create --slug "my-prompt" --system "..." --user "..."
-    python3 bt_cli.py diff --slug "my-prompt" --system "..."
-    python3 bt_cli.py update --slug "my-prompt" --system "..."
-    python3 bt_cli.py promote --from "slug-v2" --to "slug"
-    python3 bt_cli.py generate --slug "my-prompt"
-    python3 bt_cli.py delete --slug "my-prompt"
-
-Environment Variables:
-    BRAINTRUST_API_KEY: Required - Your Braintrust API key
-    BRAINTRUST_PROJECT_NAME: Optional default project name
-"""
+"""Braintrust Prompt Management CLI. Run with --help for usage."""
 
 from __future__ import annotations
 
@@ -31,6 +10,7 @@ import sys
 import time
 import re
 from typing import Any
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 from difflib import unified_diff
@@ -54,7 +34,7 @@ def get_api_key() -> str:
     """Get API key from environment."""
     key = os.environ.get("BRAINTRUST_API_KEY")
     if not key:
-        print("⚠️  BRAINTRUST_API_KEY not set", file=sys.stderr)
+        print("Error: BRAINTRUST_API_KEY not set", file=sys.stderr)
         print("", file=sys.stderr)
         print("Add to your .env file:", file=sys.stderr)
         print("  BRAINTRUST_API_KEY=sk-your-api-key", file=sys.stderr)
@@ -112,7 +92,7 @@ def list_prompts(project_name: str | None = None) -> list[dict]:
     """List all prompts, optionally filtered by project."""
     if project_name:
         project_id = get_project_id(project_name)
-        result = api_request("GET", f"/prompt?project_id={project_id}")
+        result = api_request("GET", f"/prompt?{urlencode({'project_id': project_id})}")
     else:
         result = api_request("GET", "/prompt")
     return result.get("objects", [])
@@ -127,7 +107,7 @@ def get_prompt(slug: str, project_name: str | None = None) -> dict | None:
     return None
 
 
-def format_prompt_messages(prompt: Dict) -> tuple:
+def format_prompt_messages(prompt: dict) -> tuple[str, str]:
     """Extract system and user messages from prompt data."""
     prompt_data = prompt.get("prompt_data", {})
     messages = prompt_data.get("prompt", {}).get("messages", [])
@@ -150,8 +130,15 @@ def parse_input(args: argparse.Namespace) -> dict:
     """Parse input from --input or --input-file."""
     input_file = getattr(args, 'input_file', None)
     if input_file:
-        with open(input_file) as f:
-            return json.load(f)
+        try:
+            with open(input_file) as f:
+                return json.load(f)
+        except FileNotFoundError:
+            print(f"Error: Input file not found: {input_file}", file=sys.stderr)
+            sys.exit(1)
+        except json.JSONDecodeError as e:
+            print(f"Error: Invalid JSON in {input_file}: {e}", file=sys.stderr)
+            sys.exit(1)
     input_json = getattr(args, 'input', None)
     if input_json:
         try:
@@ -179,7 +166,7 @@ def invoke_prompt(project: str, slug: str, input_data: dict, verbose: bool = Fal
     try:
         return invoke_with_sdk(project, slug, input_data, verbose)
     except ImportError:
-        print("⚠️  Braintrust SDK not installed. Install with: pip install braintrust", file=sys.stderr)
+        print("Error: Braintrust SDK not installed. Install with: pip install braintrust", file=sys.stderr)
         print("SDK is required for invoke/test commands (provides tracing).", file=sys.stderr)
         sys.exit(1)
 
@@ -216,32 +203,14 @@ def invoke_with_sdk(project_name: str, slug: str, input_data: dict, verbose: boo
 
 
 def extract_output(raw_result: Any) -> Any:
-    """Extract output from various Braintrust response formats."""
+    """Extract text from Braintrust SDK response."""
     if isinstance(raw_result, str):
         return raw_result.strip()
 
-    if isinstance(raw_result, list) and raw_result:
-        first = raw_result[0]
-        if isinstance(first, dict):
-            # OpenAI format
-            if first.get("message", {}).get("content"):
-                return first["message"]["content"].strip()
-            # Anthropic format
-            if isinstance(first.get("content"), list):
-                for block in first["content"]:
-                    if block.get("type") == "text":
-                        return block.get("text", "").strip()
-            if isinstance(first.get("content"), str):
-                return first["content"].strip()
-
     if isinstance(raw_result, dict):
-        for key in ["content", "text", "output"]:
+        for key in ("content", "text", "output"):
             if isinstance(raw_result.get(key), str):
                 return raw_result[key].strip()
-        if isinstance(raw_result.get("content"), list):
-            for block in raw_result["content"]:
-                if block.get("type") == "text":
-                    return block.get("text", "").strip()
 
     return raw_result
 
@@ -303,13 +272,16 @@ def create_v2_prompt(project: str, original_slug: str, v2_slug: str, args: argpa
     api_request("POST", "/prompt", data)
 
 
-def promote_v2(project: str, original_slug: str, v2_slug: str) -> None:
+def promote_v2(project: str, original_slug: str, v2_slug: str,
+               original: dict | None = None, v2: dict | None = None) -> None:
     """Copy v2 content to original prompt."""
-    v2 = get_prompt(v2_slug, project)
+    if not v2:
+        v2 = get_prompt(v2_slug, project)
     if not v2:
         raise ValueError(f"V2 prompt '{v2_slug}' not found")
 
-    original = get_prompt(original_slug, project)
+    if not original:
+        original = get_prompt(original_slug, project)
     if not original:
         raise ValueError(f"Original prompt '{original_slug}' not found")
 
@@ -545,7 +517,7 @@ def cmd_promote(args: argparse.Namespace) -> None:
             return
 
     try:
-        promote_v2(project, to_slug, from_slug)
+        promote_v2(project, to_slug, from_slug, original=to_prompt, v2=from_prompt)
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -735,6 +707,10 @@ def cmd_generate(args: argparse.Namespace) -> None:
     slug = prompt.get("slug")
     name = prompt.get("name", slug)
 
+    # Sanitize values interpolated into TypeScript code
+    slug_safe = slug.replace("\\", "\\\\").replace("'", "\\'")
+    name_safe = name.replace("\\", "\\\\").replace("'", "\\'").replace("`", "\\`")
+
     _, user_msg = format_prompt_messages(prompt)
     variables = extract_template_variables(user_msg)
 
@@ -744,7 +720,7 @@ def cmd_generate(args: argparse.Namespace) -> None:
 
     input_obj = ", ".join(f"{v}: input.{v}" for v in variables) if variables else "input: input.input"
 
-    code = f'''// Generated by bt_cli.py for prompt: {name}
+    code = f'''// Generated by bt_cli.py for prompt: {name_safe}
 import {{ invoke, wrapTraced, initLogger }} from 'braintrust';
 
 // Initialize logger for tracing (call once at app startup)
@@ -764,7 +740,7 @@ export const {func_name} = wrapTraced(async function {func_name}(
   input: {func_name.capitalize()}Input
 ) {{
   const projectName = process.env.BRAINTRUST_PROJECT_NAME;
-  const slug = '{slug}';
+  const slug = '{slug_safe}';
 
   if (!projectName) {{
     throw new Error('Missing BRAINTRUST_PROJECT_NAME');
@@ -853,7 +829,7 @@ Environment Variables:
     test_parser.add_argument("--system", help="Proposed system message (triggers A/B test)")
     test_parser.add_argument("--user", help="Proposed user message (triggers A/B test)")
     test_parser.add_argument("--project", help="Project name")
-    test_parser.add_argument("--force", "-y", action="store_true", help="Auto-accept prompts (for non-interactive use)")
+    test_parser.add_argument("--force", "-y", action="store_true", help="Auto-promote v2 and clean up (for non-interactive use)")
     test_parser.add_argument("--verbose", "-v", action="store_true", help="Show detailed output")
 
     # promote
@@ -861,7 +837,7 @@ Environment Variables:
     promote_parser.add_argument("--from", dest="from_slug", required=True, help="Source prompt slug")
     promote_parser.add_argument("--to", dest="to_slug", required=True, help="Target prompt slug")
     promote_parser.add_argument("--project", help="Project name")
-    promote_parser.add_argument("--force", "-f", action="store_true", help="Skip confirmation")
+    promote_parser.add_argument("--force", "-y", action="store_true", help="Skip all confirmations (for non-interactive use)")
     promote_parser.add_argument("--keep", action="store_true", help="Keep source prompt after promotion")
 
     # create
@@ -899,7 +875,7 @@ Environment Variables:
     # delete
     delete_parser = subparsers.add_parser("delete", help="Delete a prompt")
     delete_parser.add_argument("--slug", required=True, help="Prompt slug to delete")
-    delete_parser.add_argument("--force", "-f", action="store_true", help="Skip confirmation")
+    delete_parser.add_argument("--force", "-y", action="store_true", help="Skip confirmation (for non-interactive use)")
     delete_parser.add_argument("--project", help="Project name")
 
     args = parser.parse_args()
@@ -917,7 +893,13 @@ Environment Variables:
         "delete": cmd_delete,
     }
 
-    commands[args.command](args)
+    try:
+        commands[args.command](args)
+    except KeyboardInterrupt:
+        sys.exit(130)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

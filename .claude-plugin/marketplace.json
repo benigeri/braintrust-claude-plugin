@@ -11,7 +11,7 @@
   "plugins": [
     {
       "name": "braintrust",
-      "description": "Manages Braintrust prompts via CLI. Supports listing, viewing, creating, updating, diffing, invoking, A/B testing, promoting, generating TypeScript code, and deleting prompts.",
+      "description": "Manages Braintrust prompts via CLI.",
       "version": "1.0.0",
       "source": "."
     }

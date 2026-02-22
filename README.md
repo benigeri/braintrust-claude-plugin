@@ -38,7 +38,7 @@ pip install braintrust
 
 ## Usage
 
-Use `/braintrust` in Claude Code:
+Use `/braintrust` in Claude Code to see available commands:
 
 ```bash
 /braintrust list
@@ -47,23 +47,7 @@ Use `/braintrust` in Claude Code:
 /braintrust test --slug "email-draft" --input '{"topic": "test"}' --system "New prompt..." --force
 /braintrust diff --slug "email-draft" --system "Updated prompt..."
 /braintrust update --slug "email-draft" --system "Updated prompt..."
-/braintrust generate --slug "email-draft"
 ```
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `list` | Lists all prompts |
-| `get --slug X` | Views prompt details |
-| `invoke --slug X --input '{...}'` | Runs prompt with tracing |
-| `test --slug X --input '{...}'` | Tests prompt (simple or A/B) |
-| `diff --slug X --system "..."` | Previews changes |
-| `update --slug X --system "..."` | Applies changes |
-| `create --slug X --system "..."` | Creates new prompt |
-| `promote --from X --to Y` | Copies X content to Y |
-| `generate --slug X` | Generates TypeScript code |
-| `delete --slug X` | Deletes prompt |
 
 ## Links
 
