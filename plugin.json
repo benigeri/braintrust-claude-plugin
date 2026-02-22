@@ -1,7 +1,7 @@
 {
   "name": "braintrust",
   "version": "1.0.0",
-  "description": "Manage Braintrust prompts via CLI. Create, update, diff, and generate TypeScript code for prompts.",
+  "description": "Manages Braintrust prompts via CLI.",
   "skills": ["skills/braintrust"],
   "commands": ["commands/braintrust.md"]
 }
