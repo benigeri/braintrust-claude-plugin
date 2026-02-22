@@ -1,24 +1,12 @@
 ---
 name: braintrust
-description: Manage Braintrust prompts via CLI
+description: Manages Braintrust prompts via CLI
 skill: braintrust
 ---
 
 # /braintrust
 
-Manage Braintrust prompts: list, create, update, diff, and generate TypeScript code.
-
-## Quick Reference
-
-| Command | Description |
-|---------|-------------|
-| `list` | List all prompts |
-| `get --slug X` | View prompt details |
-| `create --slug X --system "..." --user "..."` | Create prompt |
-| `diff --slug X --system "..."` | Preview changes |
-| `update --slug X --system "..."` | Apply changes |
-| `generate --slug X` | Generate TypeScript |
-| `delete --slug X` | Delete prompt |
+Manages Braintrust prompts: list, get, invoke, test, create, update, diff, promote, generate, and delete.
 
 ## Setup
 
@@ -29,6 +17,12 @@ Requires `BRAINTRUST_API_KEY` in your `.env` file.
 ```bash
 # List prompts
 python3 bt_cli.py list
+
+# Run a prompt
+python3 bt_cli.py invoke --slug "my-prompt" --input '{"question": "test"}'
+
+# A/B test with changes (use --force in Claude Code)
+python3 bt_cli.py test --slug "my-prompt" --input '{"q": "test"}' --system "New content" --force
 
 # Always diff before updating
 python3 bt_cli.py diff --slug "my-prompt" --system "New content"

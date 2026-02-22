@@ -22,12 +22,15 @@ Environment Variables:
     BRAINTRUST_PROJECT_NAME: Optional default project name
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import os
 import sys
 import time
-from typing import Any, Dict, List, Optional
+import re
+from typing import Any
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 from difflib import unified_diff
@@ -40,6 +43,7 @@ except ImportError:
     pass  # dotenv not installed, rely on environment
 
 API_BASE = "https://api.braintrust.dev/v1"
+DEFAULT_MODEL = "claude-sonnet-4-5-20250929"
 
 
 # ============================================================
@@ -60,12 +64,12 @@ def get_api_key() -> str:
     return key
 
 
-def get_default_project() -> Optional[str]:
+def get_default_project() -> str | None:
     """Get default project name from environment."""
     return os.environ.get("BRAINTRUST_PROJECT_NAME")
 
 
-def api_request(method: str, endpoint: str, data: Optional[Dict] = None) -> Dict:
+def api_request(method: str, endpoint: str, data: dict | None = None) -> dict:
     """Make an API request to Braintrust."""
     url = f"{API_BASE}{endpoint}"
     headers = {
@@ -104,19 +108,17 @@ def get_project_id(project_name: str) -> str:
     sys.exit(1)
 
 
-def list_prompts(project_name: Optional[str] = None) -> List[Dict]:
+def list_prompts(project_name: str | None = None) -> list[dict]:
     """List all prompts, optionally filtered by project."""
-    result = api_request("GET", "/prompt")
-    prompts = result.get("objects", [])
-
     if project_name:
         project_id = get_project_id(project_name)
-        prompts = [p for p in prompts if p.get("project_id") == project_id]
+        result = api_request("GET", f"/prompt?project_id={project_id}")
+    else:
+        result = api_request("GET", "/prompt")
+    return result.get("objects", [])
 
-    return prompts
 
-
-def get_prompt(slug: str, project_name: Optional[str] = None) -> Optional[Dict]:
+def get_prompt(slug: str, project_name: str | None = None) -> dict | None:
     """Get a prompt by slug."""
     prompts = list_prompts(project_name)
     for prompt in prompts:
@@ -144,23 +146,24 @@ def format_prompt_messages(prompt: Dict) -> tuple:
     return system_msg, user_msg
 
 
-def parse_input(args: argparse.Namespace) -> Dict:
+def parse_input(args: argparse.Namespace) -> dict:
     """Parse input from --input or --input-file."""
-    if hasattr(args, 'input_file') and args.input_file:
-        with open(args.input_file) as f:
+    input_file = getattr(args, 'input_file', None)
+    if input_file:
+        with open(input_file) as f:
             return json.load(f)
-    elif hasattr(args, 'input') and args.input:
+    input_json = getattr(args, 'input', None)
+    if input_json:
         try:
-            return json.loads(args.input)
+            return json.loads(input_json)
         except json.JSONDecodeError as e:
             print(f"Error: Invalid JSON input: {e}", file=sys.stderr)
             sys.exit(1)
     return {}
 
 
-def extract_template_variables(template: str) -> List[str]:
+def extract_template_variables(template: str) -> list[str]:
     """Extract Handlebars-style template variables from text."""
-    import re
     pattern = r'\{\{(?!#|/)([a-zA-Z_][a-zA-Z0-9_]*)\}\}'
     matches = re.findall(pattern, template)
     seen = set()
@@ -171,7 +174,7 @@ def extract_template_variables(template: str) -> List[str]:
 # INVOKE HELPERS
 # ============================================================
 
-def invoke_prompt(project: str, slug: str, input_data: Dict, verbose: bool = False) -> Dict:
+def invoke_prompt(project: str, slug: str, input_data: dict, verbose: bool = False) -> dict:
     """Invoke a prompt and return result."""
     try:
         return invoke_with_sdk(project, slug, input_data, verbose)
@@ -181,7 +184,7 @@ def invoke_prompt(project: str, slug: str, input_data: Dict, verbose: bool = Fal
         sys.exit(1)
 
 
-def invoke_with_sdk(project_name: str, slug: str, input_data: Dict, verbose: bool = False) -> Dict:
+def invoke_with_sdk(project_name: str, slug: str, input_data: dict, verbose: bool = False) -> dict:
     """Invoke using Braintrust SDK (has tracing)."""
     from braintrust import invoke, init_logger
 
@@ -243,7 +246,7 @@ def extract_output(raw_result: Any) -> Any:
     return raw_result
 
 
-def display_result(result: Dict) -> None:
+def display_result(result: dict) -> None:
     """Display full result with metadata."""
     print("=== Output ===")
     display_output(result)
@@ -252,7 +255,7 @@ def display_result(result: Dict) -> None:
         print(f"Duration: {result['duration_ms']}ms")
 
 
-def display_output(result: Dict) -> None:
+def display_output(result: dict) -> None:
     """Display just the output."""
     output = result.get("output")
     if isinstance(output, str):
@@ -338,9 +341,10 @@ def delete_prompt_by_slug(project: str, slug: str) -> None:
         api_request("DELETE", f"/prompt/{prompt['id']}")
 
 
-def run_ab_test(project: str, slug: str, input_data: Dict, args: argparse.Namespace) -> None:
+def run_ab_test(project: str, slug: str, input_data: dict, args: argparse.Namespace) -> None:
     """Run A/B test comparing original prompt with proposed changes."""
     v2_slug = f"{slug}-v2"
+    force = getattr(args, 'force', False)
 
     print(f"🔬 A/B Test: {slug} vs {v2_slug}")
     print("=" * 50)
@@ -372,15 +376,24 @@ def run_ab_test(project: str, slug: str, input_data: Dict, args: argparse.Namesp
     print(f"  Original: {result_a.get('duration_ms', 'N/A')}ms")
     print(f"  V2:       {result_b.get('duration_ms', 'N/A')}ms")
 
-    print("\n" + "-" * 50)
-    promote = input(f"Promote {v2_slug} → {slug}? [y/N]: ").strip().lower()
+    if force:
+        should_promote = True
+    else:
+        print("\n" + "-" * 50)
+        promote = input(f"Promote {v2_slug} → {slug}? [y/N]: ").strip().lower()
+        should_promote = promote == 'y'
 
-    if promote == 'y':
+    if should_promote:
         promote_v2(project, slug, v2_slug)
         print(f"\n✓ Promoted {v2_slug} to {slug}")
 
-        cleanup = input(f"Delete {v2_slug}? [Y/n]: ").strip().lower()
-        if cleanup != 'n':
+        if force:
+            should_delete = True
+        else:
+            cleanup = input(f"Delete {v2_slug}? [Y/n]: ").strip().lower()
+            should_delete = cleanup != 'n'
+
+        if should_delete:
             delete_prompt_by_slug(project, v2_slug)
             print(f"✓ Deleted {v2_slug}")
     else:
@@ -469,7 +482,11 @@ def cmd_test(args: argparse.Namespace) -> None:
     input_data = parse_input(args)
 
     if args.system or args.user:
-        run_ab_test(project, args.slug, input_data, args)
+        try:
+            run_ab_test(project, args.slug, input_data, args)
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
     else:
         print(f"Testing prompt: {args.slug}\n")
         result = invoke_prompt(project, args.slug, input_data, verbose=args.verbose)
@@ -527,12 +544,20 @@ def cmd_promote(args: argparse.Namespace) -> None:
             print("Cancelled.")
             return
 
-    promote_v2(project, to_slug, from_slug)
+    try:
+        promote_v2(project, to_slug, from_slug)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
     print(f"\n✓ Promoted {from_slug} → {to_slug}")
 
     if not args.keep:
-        cleanup = input(f"Delete {from_slug}? [Y/n]: ").strip().lower()
-        if cleanup != 'n':
+        if args.force:
+            should_delete = True
+        else:
+            cleanup = input(f"Delete {from_slug}? [Y/n]: ").strip().lower()
+            should_delete = cleanup != 'n'
+        if should_delete:
             delete_prompt_by_slug(project, from_slug)
             print(f"✓ Deleted {from_slug}")
 
@@ -568,7 +593,7 @@ def cmd_create(args: argparse.Namespace) -> None:
                 "messages": messages,
             },
             "options": {
-                "model": args.model or "claude-sonnet-4-5-20250929",
+                "model": args.model or DEFAULT_MODEL,
             },
         },
     }
@@ -588,7 +613,7 @@ def cmd_update(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     prompt_id = prompt["id"]
-    update_data: Dict[str, Any] = {}
+    update_data: dict[str, Any] = {}
 
     if args.name:
         update_data["name"] = args.name
@@ -828,6 +853,7 @@ Environment Variables:
     test_parser.add_argument("--system", help="Proposed system message (triggers A/B test)")
     test_parser.add_argument("--user", help="Proposed user message (triggers A/B test)")
     test_parser.add_argument("--project", help="Project name")
+    test_parser.add_argument("--force", "-y", action="store_true", help="Auto-accept prompts (for non-interactive use)")
     test_parser.add_argument("--verbose", "-v", action="store_true", help="Show detailed output")
 
     # promote
@@ -845,7 +871,7 @@ Environment Variables:
     create_parser.add_argument("--description", help="Prompt description")
     create_parser.add_argument("--system", help="System message content")
     create_parser.add_argument("--user", help="User message template")
-    create_parser.add_argument("--model", help="Model name (default: claude-sonnet-4-5-20250929)")
+    create_parser.add_argument("--model", help=f"Model name (default: {DEFAULT_MODEL})")
     create_parser.add_argument("--project", help="Project name")
 
     # update
