@@ -1,28 +1,43 @@
 # Braintrust Claude Plugin
 
-A Claude Code plugin for managing Braintrust prompts via CLI.
-
-## Features
-
-- **List** prompts in your Braintrust project
-- **Create** new prompts with system/user messages
-- **Update** existing prompts (always diff first!)
-- **Diff** changes before applying them
-- **Generate** TypeScript invocation code
+A Claude Code plugin for managing Braintrust prompts. List, create, update, diff, invoke, A/B test, and generate TypeScript code for your prompts.
 
 ## Installation
 
-```bash
-/plugin install github:benigeri/braintrust-claude-plugin
+Add the marketplace, then install the plugin:
+
+```
+/plugin marketplace add benigeri/braintrust-claude-plugin
+/plugin install braintrust@benigeri-braintrust-claude-plugin
 ```
 
-Or add to `~/.claude/settings.json`:
+Restart Claude Code after installing.
+
+### Manual install
+
+If the marketplace install doesn't work, clone and copy manually:
+
+```bash
+git clone https://github.com/benigeri/braintrust-claude-plugin.git /tmp/braintrust-claude-plugin
+mkdir -p ~/.claude/plugins/cache/local/braintrust/1.0.0
+cp -r /tmp/braintrust-claude-plugin/* ~/.claude/plugins/cache/local/braintrust/1.0.0/
+```
+
+Then add to `~/.claude/plugins/installed_plugins.json` (merge into existing `plugins` object):
 
 ```json
-{
-  "plugins": ["github:benigeri/braintrust-claude-plugin"]
-}
+"braintrust@local": [
+  {
+    "scope": "user",
+    "installPath": "~/.claude/plugins/cache/local/braintrust/1.0.0",
+    "version": "1.0.0",
+    "installedAt": "2025-01-01T00:00:00.000Z",
+    "lastUpdated": "2025-01-01T00:00:00.000Z"
+  }
+]
 ```
+
+Restart Claude Code after installing.
 
 ## Setup
 
@@ -33,24 +48,24 @@ BRAINTRUST_API_KEY=sk-your-api-key
 BRAINTRUST_PROJECT_NAME=Your_Project_Name  # optional default
 ```
 
+The `braintrust` Python SDK is required for invoke/test commands:
+
+```bash
+pip install braintrust
+```
+
 Get your API key: [Braintrust API Keys](https://www.braintrust.dev/app/settings/api-keys)
 
 ## Usage
 
-Run `/braintrust` in Claude Code to load the skill, then use commands like:
+Use `/braintrust` in Claude Code followed by a command:
 
 ```bash
-# List all prompts
 /braintrust list
-
-# View prompt details
 /braintrust get --slug "email-draft"
-
-# Always diff before updating!
 /braintrust diff --slug "email-draft" --system "Updated prompt..."
 /braintrust update --slug "email-draft" --system "Updated prompt..."
-
-# Generate TypeScript code
+/braintrust invoke --slug "email-draft" --input '{"topic": "follow-up"}'
 /braintrust generate --slug "email-draft"
 ```
 
@@ -60,105 +75,63 @@ Run `/braintrust` in Claude Code to load the skill, then use commands like:
 |---------|-------------|
 | `list` | List all prompts in project |
 | `get --slug X` | View prompt details |
-| `create --slug X --system "..." --user "..."` | Create new prompt |
+| `invoke --slug X --input '{...}'` | Run prompt with tracing |
+| `test --slug X --input '{...}'` | Simple test or A/B comparison |
 | `diff --slug X --system "..."` | Preview changes |
 | `update --slug X --system "..."` | Apply changes |
-| `generate --slug X` | Generate TypeScript code |
+| `create --slug X --system "..." --user "..."` | Create new prompt |
+| `promote --from X --to Y` | Copy prompt content from X to Y |
+| `generate --slug X` | Generate TypeScript invocation code |
 | `delete --slug X` | Delete prompt |
 
-## Use Cases
+## Workflows
 
-### 1. Iterate on an Email Draft Prompt (Full Workflow)
+### A/B test a prompt change
 
-You have an email drafting prompt that's too formal. Here's the proper workflow to safely iterate:
+The `test` command with `--system` or `--user` flags automatically creates a v2 copy, runs both, and shows a side-by-side comparison:
 
-**Step 1: Review the current prompt**
 ```bash
-python3 ./braintrust.py get --slug "email-draft"
+/braintrust test --slug "email-draft" \
+  --input '{"topic": "meeting follow-up"}' \
+  --system "You are an expert email writer. Be concise and professional."
 ```
 
-**Step 2: Create a test version with your changes**
+This will:
+1. Create `email-draft-v2` with your changes
+2. Run both prompts with the same input
+3. Show side-by-side comparison with timing
+4. Ask if you want to promote v2 to the original
+
+### Iterate on a prompt safely
+
 ```bash
-python3 ./braintrust.py create \
-  --slug "email-draft-v2-test" \
-  --name "Email Draft (Test)" \
-  --system "You are a friendly email assistant. Write concise, warm emails. Avoid corporate jargon." \
-  --user "{{email_context}}"
+# 1. Review current state
+/braintrust get --slug "email-draft"
+
+# 2. A/B test your change
+/braintrust test --slug "email-draft" \
+  --input '{"topic": "test"}' \
+  --system "New improved instructions..."
+
+# 3. If not promoted during test, promote manually later
+/braintrust promote --from "email-draft-v2" --to "email-draft"
 ```
 
-**Step 3: Test both versions side-by-side**
-
-Generate test code and run both prompts with the same input:
+### Create and test a new prompt
 
 ```bash
-python3 ./braintrust.py generate --slug "email-draft"
-python3 ./braintrust.py generate --slug "email-draft-v2-test"
-```
-
-Run the generated code to invoke both prompts. The `wrapTraced` pattern ensures all calls are logged.
-
-**Step 4: Compare outputs in Braintrust Dashboard**
-
-Check traces at `https://www.braintrust.dev/app/{org}/p/{project}/logs`
-
-Compare:
-- Output quality between original and test version
-- Response times
-- Any errors or edge cases
-
-**Step 5: Update the original once confirmed**
-```bash
-python3 ./braintrust.py diff --slug "email-draft" --system "You are a friendly email assistant..."
-python3 ./braintrust.py update --slug "email-draft" --system "You are a friendly email assistant..."
-```
-
-**Step 6: Delete the test version**
-```bash
-python3 ./braintrust.py delete --slug "email-draft-v2-test" --force
-```
-
-### 2. Create a New Summarization Prompt
-
-Build a prompt from scratch for summarizing meeting notes:
-
-```bash
-# Create the prompt
-python3 ./braintrust.py create \
-  --slug "meeting-summary" \
+# Create it
+/braintrust create --slug "meeting-summary" \
   --name "Meeting Summary Generator" \
-  --description "Summarizes meeting notes into action items" \
-  --system "You are a meeting assistant. Extract key decisions, action items with owners, and next steps. Be concise." \
+  --system "Extract key decisions and action items. Be concise." \
   --user "Summarize this meeting:\n\n{{notes}}"
 
+# Test it
+/braintrust invoke --slug "meeting-summary" \
+  --input '{"notes": "We discussed the Q4 roadmap..."}'
+
 # Generate TypeScript code for your app
-python3 ./braintrust.py generate --slug "meeting-summary"
-
-# Test it, check logs, iterate as needed
-```
-
-### 3. Debug a Prompt That's Not Working
-
-Your prompt returns malformed JSON. Debug it using the test version workflow:
-
-```bash
-# 1. Check the current prompt
-python3 ./braintrust.py get --slug "data-extractor"
-
-# 2. Create a test version with the fix
-python3 ./braintrust.py create \
-  --slug "data-extractor-debug" \
-  --system "Extract data and return valid JSON. Always wrap response in ```json``` code blocks."
-
-# 3. Test both versions, compare logs
-python3 ./braintrust.py generate --slug "data-extractor"
-python3 ./braintrust.py generate --slug "data-extractor-debug"
-
-# 4. Check Braintrust logs to verify the fix works
-# 5. Update original once confirmed
-python3 ./braintrust.py update --slug "data-extractor" --system "..."
-
-# 6. Delete debug version
-python3 ./braintrust.py delete --slug "data-extractor-debug" --force
+/braintrust generate --slug "meeting-summary"
 ```
 
 ## Template Variables
@@ -166,76 +139,30 @@ python3 ./braintrust.py delete --slug "data-extractor-debug" --force
 Use Handlebars syntax in user messages:
 
 ```
-# Simple variable
 Question: {{question}}
-
-# Multiple variables
 Subject: {{subject}}
-From: {{sender}}
 Body: {{body}}
 ```
 
-## Testing Prompts
-
-After creating or updating a prompt, test it:
-
-**1. Generate TypeScript code:**
-
-```bash
-/braintrust generate --slug "my-prompt"
-```
-
-**2. Run with test input:**
-
-```typescript
-import { invoke, wrapTraced, initLogger } from 'braintrust';
-
-const logger = initLogger({
-  projectName: process.env.BRAINTRUST_PROJECT_NAME!,
-  apiKey: process.env.BRAINTRUST_API_KEY,
-  asyncFlush: false,  // Important for serverless
-});
-
-const testPrompt = wrapTraced(async function testPrompt(input: { question: string }) {
-  return await invoke({
-    projectName: process.env.BRAINTRUST_PROJECT_NAME,
-    slug: 'my-prompt',
-    input: { question: input.question },
-  });
-});
-
-// Run test
-const result = await testPrompt({ question: "Test input" });
-console.log("Result:", result);
-```
-
-**3. Verify in Braintrust Dashboard:**
-
-Check traces at `https://www.braintrust.dev/app/{org}/p/{project}/logs`
+Variables are auto-detected by the `generate` command for TypeScript type generation.
 
 ## Best Practices
 
-1. **Always diff before updating** - Review changes before applying
-2. **Use descriptive slugs** - `email-draft-v2` not `prompt-1`
-3. **Test after updates** - Verify prompts work as expected
-4. **Check traces** - Use Braintrust dashboard to debug issues
+1. **Always diff before updating** -- review changes before applying
+2. **Use A/B test for significant changes** -- compare outputs before committing
+3. **Use descriptive slugs** -- `email-draft-v2` not `prompt-1`
+4. **Check traces** -- use the Braintrust dashboard to debug issues
 
 ## Troubleshooting
 
-**"Project not found"**
-- Check `BRAINTRUST_PROJECT_NAME` is correct
-- Run `list` to see available projects/prompts
+| Problem | Solution |
+|---------|----------|
+| "Project not found" | Check `BRAINTRUST_PROJECT_NAME` is correct. Run `list` to see available projects. |
+| "Prompt not found" | Verify slug spelling (case-sensitive). Check you're in the right project. |
+| No traces in dashboard | Install SDK: `pip install braintrust`. Verify API key is valid. |
+| "BRAINTRUST_API_KEY not set" | Add `BRAINTRUST_API_KEY=sk-...` to your `.env` file. |
 
-**"Prompt not found"**
-- Verify slug spelling (case-sensitive)
-- Check you're in the right project
-
-**No traces appearing in dashboard**
-- Ensure `initLogger()` is called before invoke
-- Use `asyncFlush: false` in serverless environments
-- Verify API key is valid
-
-**Validate API key:**
+Validate your API key:
 
 ```bash
 curl -H "Authorization: Bearer $BRAINTRUST_API_KEY" \
