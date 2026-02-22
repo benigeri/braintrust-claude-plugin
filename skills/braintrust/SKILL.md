@@ -28,7 +28,7 @@ Manage Braintrust prompts through the CLI.
 ### Invoke (Run a prompt)
 
 ```bash
-python3 ./braintrust.py invoke --slug "my-prompt" --input '{"question": "test"}'
+python3 ./bt_cli.py invoke --slug "my-prompt" --input '{"question": "test"}'
 ```
 
 Shows output, token usage, and trace URL for Braintrust dashboard.
@@ -37,12 +37,12 @@ Shows output, token usage, and trace URL for Braintrust dashboard.
 
 **Simple test:**
 ```bash
-python3 ./braintrust.py test --slug "my-prompt" --input '{"q": "test"}'
+python3 ./bt_cli.py test --slug "my-prompt" --input '{"q": "test"}'
 ```
 
 **A/B test with changes:**
 ```bash
-python3 ./braintrust.py test --slug "my-prompt" \
+python3 ./bt_cli.py test --slug "my-prompt" \
   --input '{"q": "test"}' \
   --system "New improved instructions..."
 ```
@@ -57,10 +57,10 @@ This will:
 
 ```bash
 # Preview changes
-python3 ./braintrust.py diff --slug "my-prompt" --system "New content"
+python3 ./bt_cli.py diff --slug "my-prompt" --system "New content"
 
 # Apply changes
-python3 ./braintrust.py update --slug "my-prompt" --system "New content"
+python3 ./bt_cli.py update --slug "my-prompt" --system "New content"
 ```
 
 ## Environment Setup

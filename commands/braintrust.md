@@ -28,9 +28,9 @@ Requires `BRAINTRUST_API_KEY` in your `.env` file.
 
 ```bash
 # List prompts
-python3 braintrust.py list
+python3 bt_cli.py list
 
 # Always diff before updating
-python3 braintrust.py diff --slug "my-prompt" --system "New content"
-python3 braintrust.py update --slug "my-prompt" --system "New content"
+python3 bt_cli.py diff --slug "my-prompt" --system "New content"
+python3 bt_cli.py update --slug "my-prompt" --system "New content"
 ```
