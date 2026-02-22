@@ -62,13 +62,14 @@ def api_request(method: str, endpoint: str, data: dict | None = None) -> dict:
 
     try:
         with urlopen(req) as response:
-            return json.loads(response.read().decode())
+            body = response.read().decode()
+            return json.loads(body) if body else {}
     except HTTPError as e:
         error_body = e.read().decode()
-        print(f"API Error ({e.code}): {error_body}", file=sys.stderr)
+        print(f"Error: API request failed ({e.code}): {error_body}", file=sys.stderr)
         sys.exit(1)
     except URLError as e:
-        print(f"Network Error: {e.reason}", file=sys.stderr)
+        print(f"Error: Network request failed: {e.reason}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -318,7 +319,7 @@ def run_ab_test(project: str, slug: str, input_data: dict, args: argparse.Namesp
     v2_slug = f"{slug}-v2"
     force = getattr(args, 'force', False)
 
-    print(f"🔬 A/B Test: {slug} vs {v2_slug}")
+    print(f"A/B Test: {slug} vs {v2_slug}")
     print("=" * 50)
 
     existing_v2 = get_prompt(v2_slug, project)
@@ -326,25 +327,25 @@ def run_ab_test(project: str, slug: str, input_data: dict, args: argparse.Namesp
         print(f"\nNote: {v2_slug} already exists. Using existing version.")
         print("Delete it first if you want to test new changes.\n")
     else:
-        print(f"\n📝 Creating {v2_slug} with proposed changes...")
+        print(f"\nCreating {v2_slug} with proposed changes...")
         create_v2_prompt(project, slug, v2_slug, args)
-        print(f"✓ Created {v2_slug}\n")
+        print(f"Created {v2_slug}\n")
 
     print("Running both prompts with same input...")
     print("-" * 50)
 
-    print(f"\n🅰️  ORIGINAL ({slug}):")
+    print(f"\n[A] ORIGINAL ({slug}):")
     print("-" * 30)
     result_a = invoke_prompt(project, slug, input_data, verbose=False)
     display_output(result_a)
 
-    print(f"\n🅱️  V2 ({v2_slug}):")
+    print(f"\n[B] V2 ({v2_slug}):")
     print("-" * 30)
     result_b = invoke_prompt(project, v2_slug, input_data, verbose=False)
     display_output(result_b)
 
     print("\n" + "=" * 50)
-    print("📊 Comparison:")
+    print("Comparison:")
     print(f"  Original: {result_a.get('duration_ms', 'N/A')}ms")
     print(f"  V2:       {result_b.get('duration_ms', 'N/A')}ms")
 
@@ -714,7 +715,7 @@ def cmd_generate(args: argparse.Namespace) -> None:
     _, user_msg = format_prompt_messages(prompt)
     variables = extract_template_variables(user_msg)
 
-    func_name = slug.replace("-", "_").replace(" ", "_")
+    func_name = re.sub(r'[^a-zA-Z0-9_]', '_', slug)
     func_name = "".join(word.capitalize() for word in func_name.split("_"))
     func_name = func_name[0].lower() + func_name[1:] if func_name else "invokePrompt"
 
