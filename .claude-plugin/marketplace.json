@@ -1,0 +1,25 @@
+{
+  "name": "braintrust-claude-plugin",
+  "owner": {
+    "name": "benigeri",
+    "url": "https://github.com/benigeri"
+  },
+  "metadata": {
+    "description": "Claude Code plugin for managing Braintrust prompts",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "braintrust",
+      "description": "Manage Braintrust prompts via CLI. Create, update, diff, invoke, A/B test, and generate TypeScript code for prompts.",
+      "version": "1.0.0",
+      "author": {
+        "name": "benigeri",
+        "url": "https://github.com/benigeri"
+      },
+      "homepage": "https://github.com/benigeri/braintrust-claude-plugin",
+      "tags": ["braintrust", "prompts", "llm", "ai"],
+      "source": "."
+    }
+  ]
+}
