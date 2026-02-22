@@ -178,7 +178,7 @@ def invoke_with_sdk(project_name: str, slug: str, input_data: dict, verbose: boo
 
     # Initialize logger for tracing
     init_logger(
-        project_name=project_name,
+        project=project_name,
         api_key=get_api_key(),
     )
 
