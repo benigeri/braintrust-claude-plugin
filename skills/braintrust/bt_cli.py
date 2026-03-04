@@ -30,14 +30,17 @@ DEFAULT_MODEL = "claude-sonnet-4-5-20250929"
 # CORE UTILITIES
 # ============================================================
 
-def get_api_key() -> str:
-    """Get API key from environment."""
+def require_api_key() -> str:
+    """Require API key from environment with clear fail-fast guidance."""
     key = os.environ.get("BRAINTRUST_API_KEY")
     if not key:
         print("Error: BRAINTRUST_API_KEY not set", file=sys.stderr)
         print("", file=sys.stderr)
-        print("Add to your .env file:", file=sys.stderr)
+        print("Set it in your environment or .env file:", file=sys.stderr)
         print("  BRAINTRUST_API_KEY=sk-your-api-key", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("You can keep a default project in:", file=sys.stderr)
+        print("  BRAINTRUST_PROJECT_NAME=Your_Project_Name", file=sys.stderr)
         print("", file=sys.stderr)
         print("Get your API key from: https://www.braintrust.dev/app/settings/api-keys", file=sys.stderr)
         sys.exit(1)
@@ -49,11 +52,28 @@ def get_default_project() -> str | None:
     return os.environ.get("BRAINTRUST_PROJECT_NAME")
 
 
+def resolve_project(project_arg: str | None, *, required: bool, command_name: str) -> str | None:
+    """Resolve project from flag or environment, optionally requiring it."""
+    project = project_arg or get_default_project()
+    if required and not project:
+        print(
+            f"Error: Project name required for '{command_name}' "
+            "(--project or BRAINTRUST_PROJECT_NAME)",
+            file=sys.stderr,
+        )
+        print("", file=sys.stderr)
+        print("Set one of:", file=sys.stderr)
+        print("  --project Your_Project_Name", file=sys.stderr)
+        print("  BRAINTRUST_PROJECT_NAME=Your_Project_Name", file=sys.stderr)
+        sys.exit(1)
+    return project
+
+
 def api_request(method: str, endpoint: str, data: dict | None = None) -> dict:
     """Make an API request to Braintrust."""
     url = f"{API_BASE}{endpoint}"
     headers = {
-        "Authorization": f"Bearer {get_api_key()}",
+        "Authorization": f"Bearer {require_api_key()}",
         "Content-Type": "application/json",
     }
 
@@ -179,7 +199,7 @@ def invoke_with_sdk(project_name: str, slug: str, input_data: dict, verbose: boo
     # Initialize logger for tracing
     init_logger(
         project=project_name,
-        api_key=get_api_key(),
+        api_key=require_api_key(),
     )
 
     if verbose:
@@ -381,7 +401,8 @@ def run_ab_test(project: str, slug: str, input_data: dict, args: argparse.Namesp
 
 def cmd_list(args: argparse.Namespace) -> None:
     """List all prompts."""
-    project = args.project or get_default_project()
+    require_api_key()
+    project = resolve_project(args.project, required=False, command_name="list")
     prompts = list_prompts(project)
 
     if not prompts:
@@ -402,7 +423,8 @@ def cmd_list(args: argparse.Namespace) -> None:
 
 def cmd_get(args: argparse.Namespace) -> None:
     """Get details of a specific prompt."""
-    project = args.project or get_default_project()
+    require_api_key()
+    project = resolve_project(args.project, required=False, command_name="get")
     prompt = get_prompt(args.slug, project)
 
     if not prompt:
@@ -425,10 +447,8 @@ def cmd_get(args: argparse.Namespace) -> None:
 
 def cmd_invoke(args: argparse.Namespace) -> None:
     """Invoke a prompt and display the result with tracing."""
-    project = args.project or get_default_project()
-    if not project:
-        print("Error: Project name required (--project or BRAINTRUST_PROJECT_NAME)", file=sys.stderr)
-        sys.exit(1)
+    require_api_key()
+    project = resolve_project(args.project, required=True, command_name="invoke")
 
     prompt = get_prompt(args.slug, project)
     if not prompt:
@@ -442,10 +462,8 @@ def cmd_invoke(args: argparse.Namespace) -> None:
 
 def cmd_test(args: argparse.Namespace) -> None:
     """Test a prompt - simple run or A/B comparison with changes."""
-    project = args.project or get_default_project()
-    if not project:
-        print("Error: Project name required (--project or BRAINTRUST_PROJECT_NAME)", file=sys.stderr)
-        sys.exit(1)
+    require_api_key()
+    project = resolve_project(args.project, required=True, command_name="test")
 
     prompt = get_prompt(args.slug, project)
     if not prompt:
@@ -468,10 +486,8 @@ def cmd_test(args: argparse.Namespace) -> None:
 
 def cmd_promote(args: argparse.Namespace) -> None:
     """Promote changes from one prompt to another."""
-    project = args.project or get_default_project()
-    if not project:
-        print("Error: Project name required", file=sys.stderr)
-        sys.exit(1)
+    require_api_key()
+    project = resolve_project(args.project, required=True, command_name="promote")
 
     from_slug = args.from_slug
     to_slug = args.to_slug
@@ -537,10 +553,8 @@ def cmd_promote(args: argparse.Namespace) -> None:
 
 def cmd_create(args: argparse.Namespace) -> None:
     """Create a new prompt."""
-    project = args.project or get_default_project()
-    if not project:
-        print("Error: Project name required (--project or BRAINTRUST_PROJECT_NAME)", file=sys.stderr)
-        sys.exit(1)
+    require_api_key()
+    project = resolve_project(args.project, required=True, command_name="create")
 
     project_id = get_project_id(project)
 
@@ -578,7 +592,8 @@ def cmd_create(args: argparse.Namespace) -> None:
 
 def cmd_update(args: argparse.Namespace) -> None:
     """Update an existing prompt."""
-    project = args.project or get_default_project()
+    require_api_key()
+    project = resolve_project(args.project, required=False, command_name="update")
     prompt = get_prompt(args.slug, project)
 
     if not prompt:
@@ -637,7 +652,8 @@ def cmd_update(args: argparse.Namespace) -> None:
 
 def cmd_diff(args: argparse.Namespace) -> None:
     """Show diff between current prompt and proposed changes."""
-    project = args.project or get_default_project()
+    require_api_key()
+    project = resolve_project(args.project, required=False, command_name="diff")
     prompt = get_prompt(args.slug, project)
 
     if not prompt:
@@ -676,7 +692,8 @@ def cmd_diff(args: argparse.Namespace) -> None:
 
 def cmd_delete(args: argparse.Namespace) -> None:
     """Delete a prompt by slug."""
-    project = args.project or get_default_project()
+    require_api_key()
+    project = resolve_project(args.project, required=False, command_name="delete")
     prompt = get_prompt(args.slug, project)
 
     if not prompt:
@@ -698,7 +715,8 @@ def cmd_delete(args: argparse.Namespace) -> None:
 
 def cmd_generate(args: argparse.Namespace) -> None:
     """Generate TypeScript usage code for a prompt."""
-    project = args.project or get_default_project()
+    require_api_key()
+    project = resolve_project(args.project, required=False, command_name="generate")
     prompt = get_prompt(args.slug, project)
 
     if not prompt:
