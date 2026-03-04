@@ -5,13 +5,13 @@
     "url": "https://github.com/benigeri"
   },
   "metadata": {
-    "description": "Claude Code plugin for managing Braintrust prompts via CLI.",
+    "description": "Claude adapter for the shared Braintrust prompt CLI (native Claude + shell/Codex workflows).",
     "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "braintrust",
-      "description": "Manages Braintrust prompts via CLI.",
+      "description": "Claude runtime adapter for shared Braintrust CLI commands.",
       "version": "1.0.0",
       "source": "."
     }
