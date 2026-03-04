@@ -1,7 +1,7 @@
 {
   "name": "braintrust",
   "version": "1.0.0",
-  "description": "Manages Braintrust prompts via CLI.",
+  "description": "Claude adapter for the shared Braintrust CLI engine (also supports shell/Codex via ./braintrust).",
   "skills": ["skills/braintrust"],
   "commands": ["commands/braintrust.md"]
 }

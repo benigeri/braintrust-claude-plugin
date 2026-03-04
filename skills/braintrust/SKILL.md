@@ -1,75 +1,69 @@
 ---
 name: braintrust
-description: Manages Braintrust prompts via CLI. Use when working with LLM prompts, prompt versioning, A/B testing prompts, or when the user mentions Braintrust. Supports list, get, invoke, test, create, update, diff, delete, promote, and generate commands.
+description: Claude adapter for the shared Braintrust prompt CLI. Use for prompt listing, retrieval, invoke/testing, diff/update, and promotion.
 argument-hint: <command> [options]
 allowed-tools: Bash(python3 */bt_cli.py *)
 ---
 
 # Braintrust Prompt Management
 
-Manages Braintrust prompts through the CLI tool at `SKILL_DIR/bt_cli.py`.
+This skill is the Claude adapter for the shared CLI engine at `SKILL_DIR/bt_cli.py`.
 
-## Commands
+- Claude runtime command: `/braintrust <command>`
+- Shell/Codex equivalent: `./braintrust <command>`
+
+Both call the same core engine.
+
+## Canonical Commands
 
 | Command | Description | Side Effects |
-|---------|-------------|--------------|
-| `list` | Lists all prompts | None |
-| `get --slug X` | Views prompt details | None |
-| `invoke --slug X --input '{...}'` | Runs prompt with tracing | Creates trace |
-| `test --slug X --input '{...}'` | Tests prompt (simple or A/B) | May create v2 prompt |
-| `diff --slug X --system "..."` | Previews changes | None |
-| `update --slug X --system "..."` | Applies changes | Modifies prompt |
-| `create --slug X --system "..."` | Creates new prompt | Creates prompt |
-| `promote --from X --to Y` | Copies X content to Y | Modifies Y |
-| `generate --slug X` | Generates TypeScript code | None |
-| `delete --slug X` | Deletes prompt | Deletes prompt |
+|---|---|---|
+| `list` | List prompts | None |
+| `get --slug X` | View prompt details | None |
+| `invoke --slug X --input '{...}'` | Run prompt with tracing | Creates trace |
+| `diff --slug X --system "..."` | Preview message changes | None |
+| `update --slug X --system "..."` | Apply message changes | Modifies prompt |
+| `test --slug X --input '{...}' [--system "..."]` | Simple run or A/B test | May create/promote/delete v2 |
+| `promote --from X --to Y` | Copy X content into Y | Modifies Y |
+
+Extended commands: `create`, `delete`, `generate`.
 
 ## Usage
 
 ```bash
-# List prompts
 python3 SKILL_DIR/bt_cli.py list
-
-# View prompt details
 python3 SKILL_DIR/bt_cli.py get --slug "my-prompt"
-
-# Run a prompt
-python3 SKILL_DIR/bt_cli.py invoke --slug "my-prompt" --input '{"question": "test"}'
-
-# A/B test with proposed changes
-python3 SKILL_DIR/bt_cli.py test --slug "my-prompt" \
-  --input '{"q": "test"}' \
-  --system "New instructions..." \
-  --force
-
-# Preview then apply changes
+python3 SKILL_DIR/bt_cli.py invoke --slug "my-prompt" --input '{"question":"test"}'
 python3 SKILL_DIR/bt_cli.py diff --slug "my-prompt" --system "New content"
 python3 SKILL_DIR/bt_cli.py update --slug "my-prompt" --system "New content"
-
-# Promote and clean up
-python3 SKILL_DIR/bt_cli.py promote --from "slug-v2" --to "slug" --force
+python3 SKILL_DIR/bt_cli.py test --slug "my-prompt" --input '{"q":"test"}' --system "New instructions" --force
+python3 SKILL_DIR/bt_cli.py promote --from "my-prompt-v2" --to "my-prompt" --force
 ```
 
 ## Non-Interactive Mode
 
-Commands that normally prompt for confirmation (`test` with A/B, `promote`, `delete`) accept `--force` (short: `-y`) to skip all interactive prompts. Always use the long form `--force` when running from Claude Code.
-
-**Warning:** `test --force` with A/B mode (when `--system` or `--user` is provided) will automatically promote the v2 version and delete it. For safe preview without side effects, use `invoke` first, then `update` separately.
+Commands with confirmation prompts (`test` in A/B mode, `promote`, `delete`) support `--force` (`-y`). Use `--force` for automation and Claude Code execution.
 
 ## Environment
 
 ```bash
 BRAINTRUST_API_KEY=sk-your-api-key        # Required
-BRAINTRUST_PROJECT_NAME=Your_Project      # Optional default
+BRAINTRUST_PROJECT_NAME=Your_Project_Name # Optional default project
+```
+
+The `braintrust` Python SDK is required for `invoke` and `test`:
+
+```bash
+pip install braintrust
 ```
 
 ## Key Rules
 
-1. Always diff before updating — never update blind.
-2. Use `--force` for all interactive commands in Claude Code.
-3. A/B test significant changes — compare before committing.
-4. Use descriptive slugs — `email-draft-v2` not `prompt-1`.
+1. Always run `diff` before `update`.
+2. Use `--force` in non-interactive/automated workflows.
+3. Use A/B test mode for significant prompt changes.
+4. Keep prompt slugs explicit and versioned (`my-prompt-v2`).
 
 ## Reference
 
-See [reference.md](reference.md) for detailed parameter docs, A/B testing workflows, and TypeScript integration.
+See [reference.md](reference.md) for detailed examples and command options.
