@@ -12,6 +12,7 @@ Both runtimes call the same CLI logic.
 
 - `Codex / plain shell`: run `./braintrust <command>`
 - `Claude Code plugin`: run `/braintrust <command>`
+- `Codex skill discovery`: `AGENTS.md` maps the `braintrust` skill to `skills/braintrust/SKILL.md`
 
 If you keep Claude plugin files (`plugin.json`, `.claude-plugin/*`, `commands/*`, `skills/*`), they act as adapters around the same core CLI.
 

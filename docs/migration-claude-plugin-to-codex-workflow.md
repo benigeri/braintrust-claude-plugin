@@ -47,6 +47,7 @@ Core implementation:
 Shell/Codex adapter:
 
 - `./braintrust`
+- `AGENTS.md` (Codex skill registration)
 
 Claude adapters:
 

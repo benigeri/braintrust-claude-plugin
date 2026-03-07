@@ -23,6 +23,12 @@ for cmd in list get invoke diff update test promote; do
   ./braintrust "$cmd" --help >/dev/null
 done
 
+echo "[smoke] codex skill adapter registration"
+[ -f AGENTS.md ] || fail "Missing AGENTS.md for Codex skill discovery"
+"$SEARCH_TOOL" -q "braintrust" AGENTS.md || fail "Expected braintrust skill entry in AGENTS.md"
+"$SEARCH_TOOL" -q "skills/braintrust/SKILL.md" AGENTS.md || fail "Expected SKILL.md mapping in AGENTS.md"
+"$SEARCH_TOOL" -q "./braintrust <command>" AGENTS.md || fail "Expected Codex runtime mapping in AGENTS.md"
+
 echo "[smoke] missing API key fails fast"
 api_error_output="$(env -u BRAINTRUST_API_KEY -u BRAINTRUST_PROJECT_NAME ./braintrust list 2>&1 || true)"
 echo "$api_error_output" | "$SEARCH_TOOL" -q "BRAINTRUST_API_KEY" || fail "Expected missing API key guidance"

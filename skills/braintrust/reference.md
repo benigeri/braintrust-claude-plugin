@@ -1,13 +1,13 @@
 # Braintrust CLI Reference
 
-Detailed parameter docs for `bt_cli.py`. See SKILL.md for quick reference.
+Detailed parameter docs for the shared CLI engine. Run examples from repo root using `./braintrust` (or `/braintrust` in Claude).
 
 ## invoke
 
 Runs a prompt and displays the result with tracing.
 
 ```bash
-python3 ./bt_cli.py invoke --slug "my-prompt" --input '{"key": "value"}' [--project "Name"] [--verbose]
+./braintrust invoke --slug "my-prompt" --input '{"key": "value"}' [--project "Name"] [--verbose]
 ```
 
 | Parameter | Short | Required | Description |
@@ -26,12 +26,12 @@ Runs a prompt (simple) or compares original vs proposed changes (A/B).
 
 **Simple test** — just runs the prompt:
 ```bash
-python3 ./bt_cli.py test --slug "my-prompt" --input '{"q": "test"}'
+./braintrust test --slug "my-prompt" --input '{"q": "test"}'
 ```
 
 **A/B test** — pass `--system` or `--user` to trigger comparison:
 ```bash
-python3 ./bt_cli.py test --slug "my-prompt" \
+./braintrust test --slug "my-prompt" \
   --input '{"q": "test"}' \
   --system "New instructions" \
   --force
@@ -56,7 +56,7 @@ A/B mode automatically:
 Copies content from one prompt to another.
 
 ```bash
-python3 ./bt_cli.py promote --from "slug-v2" --to "slug" [--force] [--keep]
+./braintrust promote --from "slug-v2" --to "slug" [--force] [--keep]
 ```
 
 | Parameter | Short | Description |
@@ -71,7 +71,7 @@ python3 ./bt_cli.py promote --from "slug-v2" --to "slug" [--force] [--keep]
 Generates TypeScript invocation code with `wrapTraced` and `initLogger`.
 
 ```bash
-python3 ./bt_cli.py generate --slug "my-prompt"
+./braintrust generate --slug "my-prompt"
 ```
 
 Key points for generated code:

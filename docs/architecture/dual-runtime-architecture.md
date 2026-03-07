@@ -18,6 +18,7 @@ Adapters call the same core engine and do not re-implement command logic.
 Shell/Codex adapter:
 
 - `./braintrust` -> `python3 skills/braintrust/bt_cli.py ...`
+- `AGENTS.md` -> exposes `skills/braintrust/SKILL.md` for Codex skill discovery
 
 Claude adapters:
 
