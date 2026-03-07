@@ -391,8 +391,8 @@ def run_ab_test(project: str, slug: str, input_data: dict, args: argparse.Namesp
             print(f"✓ Deleted {v2_slug}")
     else:
         print(f"\nKept both versions. {v2_slug} available for further testing.")
-        print(f"To promote later: python3 bt_cli.py promote --from {v2_slug} --to {slug}")
-        print(f"To delete v2:     python3 bt_cli.py delete --slug {v2_slug}")
+        print(f"To promote later: ./braintrust promote --from {v2_slug} --to {slug}")
+        print(f"To delete v2:     ./braintrust delete --slug {v2_slug}")
 
 
 # ============================================================
@@ -792,6 +792,7 @@ export const {func_name} = wrapTraced(async function {func_name}(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
+        prog="./braintrust",
         description="Braintrust Prompt Management CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""

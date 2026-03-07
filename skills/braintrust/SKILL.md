@@ -1,16 +1,16 @@
 ---
 name: braintrust
-description: Claude adapter for the shared Braintrust prompt CLI. Use for prompt listing, retrieval, invoke/testing, diff/update, and promotion.
+description: Runtime-agnostic adapter for the shared Braintrust prompt CLI. Use for prompt listing, retrieval, invoke/testing, diff/update, and promotion.
 argument-hint: <command> [options]
 allowed-tools: Bash(python3 */bt_cli.py *)
 ---
 
 # Braintrust Prompt Management
 
-This skill is the Claude adapter for the shared CLI engine at `SKILL_DIR/bt_cli.py`.
+This skill is a runtime-agnostic adapter for the shared CLI engine at `skills/braintrust/bt_cli.py`.
 
+- Codex/shell command: `./braintrust <command>`
 - Claude runtime command: `/braintrust <command>`
-- Shell/Codex equivalent: `./braintrust <command>`
 
 Both call the same core engine.
 
@@ -31,13 +31,13 @@ Extended commands: `create`, `delete`, `generate`.
 ## Usage
 
 ```bash
-python3 SKILL_DIR/bt_cli.py list
-python3 SKILL_DIR/bt_cli.py get --slug "my-prompt"
-python3 SKILL_DIR/bt_cli.py invoke --slug "my-prompt" --input '{"question":"test"}'
-python3 SKILL_DIR/bt_cli.py diff --slug "my-prompt" --system "New content"
-python3 SKILL_DIR/bt_cli.py update --slug "my-prompt" --system "New content"
-python3 SKILL_DIR/bt_cli.py test --slug "my-prompt" --input '{"q":"test"}' --system "New instructions" --force
-python3 SKILL_DIR/bt_cli.py promote --from "my-prompt-v2" --to "my-prompt" --force
+./braintrust list
+./braintrust get --slug "my-prompt"
+./braintrust invoke --slug "my-prompt" --input '{"question":"test"}'
+./braintrust diff --slug "my-prompt" --system "New content"
+./braintrust update --slug "my-prompt" --system "New content"
+./braintrust test --slug "my-prompt" --input '{"q":"test"}' --system "New instructions" --force
+./braintrust promote --from "my-prompt-v2" --to "my-prompt" --force
 ```
 
 ## Non-Interactive Mode
